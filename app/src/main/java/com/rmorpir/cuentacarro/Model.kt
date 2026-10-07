@@ -21,7 +21,9 @@ data class Item(
     val cents: Long,
     val qty: Double,
     val kg: Boolean,
-    val promo: Promo?
+    val promo: Promo?,
+    /** Precio de la última vez que compraste este producto (si se reconoció por su código de barras). */
+    val prevCents: Long? = null
 )
 
 data class LineCalc(val gross: Long, val net: Long) {

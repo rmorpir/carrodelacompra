@@ -137,13 +137,6 @@ fun CarroScreen(model: AppModel, store: Store) {
         camera.launch(FileProvider.getUriForFile(ctx, ctx.packageName + ".fileprovider", file))
     }
 
-    fun step(item: Item, dir: Int) {
-        val st = if (item.kg) 0.1 else 1.0
-        val q = Math.round((item.qty + dir * st) * 1000) / 1000.0
-        if (q < st - 1e-9) return
-        model.update { s -> s.copy(items = s.items.map { if (it.id == item.id) it.copy(qty = q) else it }) }
-    }
-
     fun saveItem(d: Draft, item: Item) {
         model.update { s ->
             val exists = s.items.any { it.id == item.id }
@@ -178,6 +171,17 @@ fun CarroScreen(model: AppModel, store: Store) {
                 }
             }
         }
+    }
+
+    // El botón "−" resta una unidad; con la última unidad quita el producto (con opción de deshacer).
+    fun step(item: Item, dir: Int) {
+        val st = if (item.kg) 0.1 else 1.0
+        val q = Math.round((item.qty + dir * st) * 1000) / 1000.0
+        if (q < st - 1e-9) {
+            deleteItem(item.id)
+            return
+        }
+        model.update { s -> s.copy(items = s.items.map { if (it.id == item.id) it.copy(qty = q) else it }) }
     }
 
     Scaffold(
@@ -382,6 +386,17 @@ private fun ItemRow(item: Item, onEdit: () -> Unit, onStep: (Int) -> Unit) {
                         )
                         val pr = item.promo
                         if (pr != null) PromoTag(promoLabel(pr))
+                    }
+                    val pv = item.prevCents
+                    if (pv != null && pv != item.cents) {
+                        val diff = item.cents - pv
+                        Text(
+                            (if (diff > 0) "▲ +" else "▼ −") + money(Math.abs(diff)) + " (antes " + money(pv) + ")",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = if (diff > 0) Pal.over() else Pal.ok()
+                        )
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {

@@ -7,7 +7,8 @@ App de Android para controlar el gasto mientras haces la compra. Fotografías el
 - **Foto del cartel.** Lee el texto con el reconocimiento de ML Kit, que va incluido en la app. Rellena nombre, precio y oferta; tú lo confirmas antes de añadirlo.
 - **Ofertas.** 2x1, 3x2, otra NxM, 2ª unidad con el % que quieras y descuento en %. Al peso (€/kg) también.
 - **Tope de gasto.** Aviso con vibración y banner al superarlo. La barra de abajo muestra siempre el total, lo que te queda y el avance.
-- **Códigos de barras.** Si en la foto sale el código de barras, la app recuerda el último precio de ese producto para la próxima vez.
+- **Códigos de barras.** Si en la foto sale el código de barras, la app recuerda el último precio de ese producto. La próxima vez que lo añadas, la lista marca si ha subido (▲, en rojo) o bajado (▼, en verde) y cuánto.
+- **Quitar un producto.** Con el botón "−" cuando solo queda una unidad, o desde la hoja del producto (Eliminar). Los dos permiten deshacer.
 - **Ticket.** En el resumen escribes el total del ticket y te dice si coincide.
 
 ## Instalar en el móvil

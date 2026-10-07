@@ -38,7 +38,8 @@ class Store(context: Context) {
                         o.getLong("cents"),
                         o.getDouble("qty"),
                         o.optBoolean("kg"),
-                        promo
+                        promo,
+                        if (o.has("prev")) o.getLong("prev") else null
                     )
                 )
             }
@@ -58,6 +59,8 @@ class Store(context: Context) {
             o.put("cents", line.cents)
             o.put("qty", line.qty)
             o.put("kg", line.kg)
+            val pv = line.prevCents
+            if (pv != null) o.put("prev", pv)
             val p = line.promo
             if (p != null) {
                 val po = JSONObject()

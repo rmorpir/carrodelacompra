@@ -92,6 +92,10 @@ class Draft(val id: String?) {
     var candidates by mutableStateOf<List<Long>>(emptyList())
     var barcode: String? = null
 
+    // Precio de la última vez, si el producto se reconoció por su código de barras.
+    var prevCents by mutableStateOf<Long?>(null)
+    var prevKg by mutableStateOf(false)
+
     var touchedName = false
     var touchedPrice = false
     var touchedQty = false
@@ -127,7 +131,10 @@ class Draft(val id: String?) {
         if (n.isEmpty() || price <= 0.0 || price >= 10000.0 || qty <= 0.0 || qty >= 1000.0) return null
         var pr = promo()
         if (kg && pr != null && pr.type != PromoType.PCT) pr = null
-        return Item(id ?: newId, n, (price * 100).roundToLong(), qty, kg, pr)
+        val cents = (price * 100).roundToLong()
+        val prev = prevCents
+        val keepPrev = if (prev != null && prevKg == kg && prev != cents) prev else null
+        return Item(id ?: newId, n, cents, qty, kg, pr, keepPrev)
     }
 
     fun setUnit(toKg: Boolean) {
@@ -185,6 +192,8 @@ fun draftFrom(item: Item): Draft {
     d.priceText = centsText(item.cents)
     d.qtyText = fmtQty(item.qty)
     d.kg = item.kg
+    d.prevCents = item.prevCents
+    d.prevKg = item.kg
     val p = item.promo
     if (p != null) {
         when (p.type) {
@@ -277,7 +286,13 @@ fun applyReading(d: Draft, r: Reading, rem: Remembered?) {
         }
     }
 
-    val note = if (r.note.isNullOrBlank()) "" else " " + r.note
+    d.prevCents = rem?.cents
+    d.prevKg = rem?.kg == true
+
+    var note = if (r.note.isNullOrBlank()) "" else " " + r.note
+    if (rem != null && r.priceCents != null && rem.kg == d.kg && rem.cents != r.priceCents) {
+        note += " Antes costaba " + money(rem.cents) + "."
+    }
     if (name != null && cents != null) {
         d.status = if (usedMemory) {
             "Precio recordado de una compra anterior. Compruébalo." + note
@@ -385,6 +400,19 @@ fun ItemSheet(
                 keyboardOptions = decimal,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            val prevC = d.prevCents
+            val curC = parseNum(d.priceText)?.let { Math.round(it * 100) }
+            if (prevC != null && d.prevKg == d.kg && curC != null && curC != prevC) {
+                val diff = curC - prevC
+                Text(
+                    (if (diff > 0) "▲ Sube " else "▼ Baja ") + money(Math.abs(diff)) +
+                        " respecto a la última vez (" + money(prevC) + ")",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (diff > 0) Pal.over() else Pal.ok()
+                )
+            }
 
             if (d.candidates.size > 1) {
                 Text("Precios encontrados en el cartel", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
