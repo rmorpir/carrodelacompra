@@ -610,19 +610,19 @@
     if (token !== photoToken) return null;
     progressCb = function (p) { if (token === photoToken) setProgress(p); };
     setProgress(0);
-    var res = await worker.recognize(cv.normal);
-    if (token !== photoToken) return null;
-    var reading = CC.parseLabel(flatten(res.data));
-    if (reading.priceCents == null) {
-      // Cartel con letras claras sobre fondo oscuro: segunda pasada con la imagen invertida
-      setStatus('Probando con la imagen invertida…', '');
-      var res2 = await worker.recognize(cv.inverted);
+    var passes = [];
+    var labelsRead = [['normal', cv.normal], ['invertida', cv.inverted]];
+    for (var pi = 0; pi < labelsRead.length; pi++) {
+      if (pi === 1) setStatus('Comprobando con la imagen invertida…', '');
+      var res = await worker.recognize(labelsRead[pi][1]);
       if (token !== photoToken) return null;
-      var r2 = CC.parseLabel(flatten(res2.data));
-      if (r2.priceCents != null) reading = r2;
-      else if (!reading.name && r2.name) reading.name = r2.name;
-      if (!reading.promo && r2.promo) reading.promo = r2.promo;
+      var lines = flatten(res.data);
+      passes.push({ label: labelsRead[pi][0], lines: lines, reading: CC.parseLabel(lines) });
     }
+    window.__ccLast = passes.map(function (p) {
+      return { label: p.label, text: p.lines.map(function (l) { return l.text; }).join(' | '), price: p.reading.priceCents, promo: p.reading.promo };
+    });
+    var reading = CC.mergeReadings(passes.map(function (p) { return p.reading; }));
     return { reading: reading, barcode: barcode };
   }
 

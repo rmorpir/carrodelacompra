@@ -125,6 +125,45 @@
       kg: !!(chosen && chosen.kgRef),
       promo: detectPromo(all),
       candidates: sorted.slice(0, 5).map(function (c) { return c.cents; }),
+      scored: sorted.slice(0, 8),
+      barcode: null,
+      note: notes.length ? notes.join(' ') : null
+    };
+  }
+
+  // Une lecturas de la misma foto (imagen normal e invertida): el precio que coincide en varias gana.
+  function mergeReadings(list) {
+    var rs = list.filter(Boolean);
+    if (rs.length === 0) return null;
+    if (rs.length === 1) return rs[0];
+    var best = {};
+    rs.forEach(function (r) {
+      var sc = r.scored || [];
+      var max = 1;
+      sc.forEach(function (c) { if (c.score > max) max = c.score; });
+      sc.forEach(function (c) {
+        var e = best[c.cents] || (best[c.cents] = { cents: c.cents, sum: 0, votes: 0, kgRef: false, ref: false });
+        e.sum += c.score / max; e.votes++; e.kgRef = e.kgRef || c.kgRef; e.ref = e.ref || c.ref;
+      });
+    });
+    var arr = Object.keys(best).map(function (k) { return best[k]; });
+    arr.forEach(function (e) { e.total = e.sum * (e.votes > 1 ? 1.6 : 1); });
+    arr.sort(function (a, b) { return b.total - a.total; });
+    var chosen = arr[0] || null;
+    var pick = function (f) { for (var i = 0; i < rs.length; i++) { if (rs[i][f]) return rs[i][f]; } return null; };
+    var notes = [];
+    if (chosen) {
+      if (chosen.ref && !chosen.kgRef) notes.push('El precio elegido parece ser el de referencia por litro o unidad.');
+      if (chosen.kgRef) notes.push('Parece un producto al peso (precio por kilo).');
+      if (arr.length > 1 && arr[1].total >= chosen.total * 0.75) notes.push('Hay varios precios parecidos: elige el correcto.');
+    }
+    return {
+      name: pick('name'),
+      priceCents: chosen ? chosen.cents : null,
+      kg: !!(chosen && chosen.kgRef),
+      promo: pick('promo'),
+      candidates: arr.slice(0, 5).map(function (e) { return e.cents; }),
+      scored: [],
       barcode: null,
       note: notes.length ? notes.join(' ') : null
     };
@@ -195,7 +234,7 @@
     return t.slice(0, 80);
   }
 
-  var api = { lineCalc: lineCalc, parseLabel: parseLabel, detectPromo: detectPromo };
+  var api = { lineCalc: lineCalc, parseLabel: parseLabel, mergeReadings: mergeReadings, detectPromo: detectPromo };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CC = api;
 })(typeof window !== 'undefined' ? window : globalThis);

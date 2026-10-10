@@ -110,6 +110,7 @@ async function readCase(c, tag) {
     kg: (await page.locator('#unitSeg button[aria-pressed="true"]').getAttribute('data-unit')) === 'kg',
     status: (await page.textContent('#readStatus')).trim(),
     candidates: await page.locator('#cands button').allTextContents(),
+    raw: await page.evaluate(() => window.__ccLast || null),
     secs: Math.round((Date.now() - t0) / 100) / 10
   };
   await page.screenshot({ path: path.join(OUT, 'shots', `${tag}-${c.id}.png`) });
@@ -179,6 +180,8 @@ const pass = rows.filter((r) => r.ok && !r.info).length, total = rows.filter((r)
 let md = `## Prueba del lector de carteles\n\n**${pass} de ${total} carteles de ejemplo bien leídos** (los marcados como informativos no cuentan).\n\n`;
 md += '| Cartel | Resultado | Leído (nombre / precio / oferta) | Segundos |\n|---|---|---|---|\n';
 for (const r of rows) md += `| ${r.id}${r.info ? ' (info)' : ''} | ${r.ok ? 'correcto' : 'fallo: ' + r.problems.join('; ')} | ${r.got.name || '-'} / ${r.got.price || '-'} / ${r.got.promo || '-'} | ${r.got.secs} |\n`;
+md += '\n### Texto leído por pasada\n\n';
+for (const r of rows) for (const ps of (r.got.raw || [])) md += `- ${r.id} (${ps.label}): ${ps.text.replace(/\|/g, '/')}  [precio ${ps.price}, oferta ${ps.promo ? JSON.stringify(ps.promo) : '-'}]\n`;
 md += '\n### Instalación y modo sin conexión\n\n';
 for (const c of checks) md += `- ${c.ok ? 'correcto' : 'FALLO'}: ${c.name}${c.extra ? ' (' + c.extra + ')' : ''}\n`;
 fs.writeFileSync(path.join(OUT, 'report.md'), md);
