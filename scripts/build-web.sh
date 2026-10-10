@@ -42,3 +42,5 @@ sed -i "s/__BUILD__/${BUILD_ID}/g" "$OUT/sw.js"
 echo "Versión: $BUILD_ID"
 echo "Tamaños:"
 du -sh "$OUT" "$OUT/vendor"/* "$OUT/vendor/core"/* "$OUT/vendor/lang"/* | sed 's/^/  /'
+
+echo "::notice title=Tamaño de la web::$(du -sh "$OUT" | cut -f1) en total; $(du -sh "$OUT/vendor/lang" | cut -f1) de datos de español y $(du -sh "$OUT/vendor/core" | cut -f1) de núcleo del lector"

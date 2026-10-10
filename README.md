@@ -17,6 +17,16 @@ App de Android para controlar el gasto mientras haces la compra. Fotografías el
 2. Ábrelo en el móvil. Android pedirá permitir la instalación desde el navegador o el gestor de archivos.
 3. Las versiones nuevas se instalan encima de la anterior sin perder la lista.
 
+## Versión web instalable (sin instalar APK)
+
+La carpeta `web/` es la misma app como web instalable (PWA). Se abre en Chrome y se instala desde el menú con "Instalar aplicación". Es la opción para móviles que no permiten instalar APK.
+
+- Dirección: https://rmorpir.github.io/carrodelacompra/
+- El lector de carteles (Tesseract, en español) va dentro de la web y funciona sin conexión una vez cargado. La primera vez descarga el lector; después abre al instante.
+- Cada vez que se sube código a `main`, GitHub Actions instala el lector, prueba la lógica y la lectura con carteles de ejemplo y publica la web.
+- Para que se publique hace falta activar una vez GitHub Pages: **Settings > Pages > Source: GitHub Actions**.
+- La lista y los precios recordados se guardan en el navegador de cada móvil, no se comparten entre dispositivos.
+
 ## Compilar
 
 Cada vez que se sube código a `main`, GitHub Actions compila el APK y lo publica en Releases. También puedes abrir el proyecto en Android Studio y generar el APK con **Build > Build APK(s)**.
