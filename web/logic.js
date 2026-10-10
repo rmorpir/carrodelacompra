@@ -25,15 +25,16 @@
 
   // ---------- Expresiones ----------
   var PRICE_RE = /(?<![\d.,])(\d{1,3})\s?[,.]\s?(\d{2})(?!\d)(?!\s?(?:l|kg|g|ml|cl)\b)/gi;
-  var REF_TAIL_RE = /\/\s?(?:kg|kilo|l|litro|100\s?g|100\s?ml|ud|unidad)\b|\bpor\s+(?:kg|kilo|litro)\b/i;
+  var REF_TAIL_RE = /\/\s?(?:kg|kilo|l|litro|100\s?g|100\s?ml|ud|unidad)\b|\bpor\s+(?:kg|kilo|litro)\b|(?:€|eur)\s?[\/lI|1]?\s?k[gq9]\b/i;
+  var KG_TAIL_RE = /(?:€|eur)\s?[\/lI|1]?\s?k[gq9]\b|\/\s?(?:kg|kilo)\b|\bpor\s+(?:kg|kilo)\b/i;
   var REF_HEAD_RE = /(?:precio|pvp)\s*(?:por\s*)?(?:kg|kilo|litro|l)\b\s*:?\s*$/i;
   var OLD_RE = /\b(?:antes|anterior|habitual)\b/i;
 
   var NXM_RE = /(?<![\d.,])([2-4])\s?[x×]\s?([1-3])(?![\d.,])(?!\s?(?:g|kg|l|ml|cl|litro)\b)/i;
   var POR_RE = /(?<!\d)([2-4])\s?por\s?([1-3])(?!\d)/i;
   var LLEVA_RE = /lleva[a-záéíóúñ]*\s?([2-4])\D{0,15}?pag[a-záéíóúñ]*\s?([1-3])/i;
-  var SECOND_A_RE = /(?:2\s?[ªº°]|2\.ª|2\s?a\b|segunda)\s?(?:unidad|ud\.?)?\D{0,20}?(\d{1,2})\s?%/i;
-  var SECOND_B_RE = /(\d{1,2})\s?%\D{0,15}?(?:2\s?[ªº°]|segunda)/i;
+  var SECOND_A_RE = /(?:2\s?[ªº°*]|2\.ª|2\s?a\b|segunda)\s?(?:unidad|ud\.?)?\D{0,20}?(\d{1,2})\s?%/i;
+  var SECOND_B_RE = /(\d{1,2})\s?%\D{0,15}?(?:2\s?[ªº°*]|segunda)/i;
   var PCT_A_RE = /[-−–]\s?(\d{1,2})\s?%/;
   var PCT_B_RE = /(\d{1,2})\s?%\s?(?:dto|desc)/i;
   var NOISE_RE = /\b(?:oferta|dto|descuento|ahora|antes|pvp|precio|iva|unidad|paga|lleva|cada|ahorra|hasta|stock)\b/i;
@@ -58,7 +59,7 @@
         var tail = text.slice(m.index + m[0].length, m.index + m[0].length + 10).toLowerCase();
         var ref = REF_TAIL_RE.test(tail) || REF_HEAD_RE.test(head);
         var h16 = head.slice(-16);
-        var kgRef = ref && (tail.indexOf('kg') >= 0 || tail.indexOf('kilo') >= 0 ||
+        var kgRef = ref && (KG_TAIL_RE.test(tail) || tail.indexOf('kg') >= 0 || tail.indexOf('kilo') >= 0 ||
           h16.indexOf('kg') >= 0 || h16.indexOf('kilo') >= 0);
         var key = m[0].replace(/\s/g, '');
         var el = null;
@@ -199,6 +200,7 @@
     if (REF_TAIL_RE.test(t) || NOISE_RE.test(t)) return true;
     if (NXM_RE.test(t) || POR_RE.test(t) || LLEVA_RE.test(t)) return true;
     var letters = (t.match(/[a-záéíóúñü]/g) || []).length;
+    if (/^\W*\S?\s?[x×]+\s?\d\W*$/i.test(t.trim())) return true;
     return letters < 3;
   }
 
@@ -230,6 +232,7 @@
       t = t.toLowerCase();
       t = t.charAt(0).toUpperCase() + t.slice(1);
     }
+    t = t.replace(/([a-záéíóúñü])(\d)/gi, '$1 $2');
     t = t.replace(/(\d)\s?l\b/g, '$1 L');
     return t.slice(0, 80);
   }

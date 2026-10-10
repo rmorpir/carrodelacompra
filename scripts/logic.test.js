@@ -76,5 +76,27 @@ eq('precio partido en una línea (2 elementos)', r.priceCents, 215);
 r = parseLabel([L('Sin nada útil', 10, 10, 100, 30)]);
 eq('sin precio', r.priceCents, null);
 
+// ---- Errores típicos del OCR ----
+r = parseLabel([L('JAMÓN COCIDO EXTRA', 40, 30, 400, 80), L('5,99 €lkg', 80, 300, 520, 400)]);
+eq('OCR: €lkg es al peso', r.kg, true);
+eq('OCR: €lkg precio', r.priceCents, 599);
+eq('OCR: 2* unidad al 50%', detectPromo('2* unidad al 50%'), { type: 'second', pct: 50 });
+r = parseLabel([L('YOGUR NATURAL', 40, 30, 400, 80), L('I Xx2', 40, 110, 200, 170), L('0,89:', 80, 300, 520, 480)]);
+eq('línea corta con dígitos no es nombre', r.name, 'Yogur natural');
+r = parseLabel([L('LECHE ENTERA', 40, 30, 400, 80), L('BRIK1L', 40, 85, 250, 130), L('1,45:', 80, 300, 520, 480)]);
+eq('letras pegadas a números', r.name, 'Leche entera brik 1 L');
+
+// ---- Unir lecturas ----
+const { mergeReadings } = require('../web/logic.js');
+const mk = (scored, name, promo) => ({ name, priceCents: scored[0] ? scored[0].cents : null, kg: false, promo: promo || null, candidates: scored.map(c => c.cents), scored, barcode: null, note: null });
+let m = mergeReadings([
+  mk([{ cents: 239, score: 100, ref: false, kgRef: false }], 'Café', null),
+  mk([{ cents: 235, score: 90, ref: false, kgRef: false }, { cents: 239, score: 85, ref: false, kgRef: false }], 'Café', null)
+]);
+eq('unir: gana el precio que coincide en varias pasadas', m.priceCents, 239);
+m = mergeReadings([mk([], null, null), mk([{ cents: 89, score: 50, ref: false, kgRef: false }], 'Yogur', { type: 'nxm', buy: 3, pay: 2 })]);
+eq('unir: toma la oferta de la pasada que la vio', m.promo, { type: 'nxm', buy: 3, pay: 2 });
+eq('unir: toma el precio de la pasada que lo vio', m.priceCents, 89);
+
 console.log(fails ? `\n${fails} fallos` : '\nTodo correcto');
 process.exit(fails ? 1 : 0);

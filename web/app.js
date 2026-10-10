@@ -535,18 +535,28 @@
     for (i = 255; i >= 0; i--) { acc += hist[i]; if (acc >= n * 0.02) { hi = i; break; } }
     if (hi - lo < 40) { lo = Math.max(0, lo - 20); hi = Math.min(255, hi + 20); }
     var scale = 255 / Math.max(1, hi - lo);
-    var normal = document.createElement('canvas'), inverted = document.createElement('canvas');
-    normal.width = inverted.width = w; normal.height = inverted.height = hh;
-    var nctx = normal.getContext('2d'), ictx = inverted.getContext('2d');
-    var nimg = nctx.createImageData(w, hh), iimg = ictx.createImageData(w, hh);
+    var normal = document.createElement('canvas');
+    normal.width = w; normal.height = hh;
+    var nctx = normal.getContext('2d');
+    var nimg = nctx.createImageData(w, hh);
     for (i = 0; i < n; i++) {
       var v = Math.max(0, Math.min(255, ((d[i * 4] - lo) * scale) | 0));
       nimg.data[i * 4] = nimg.data[i * 4 + 1] = nimg.data[i * 4 + 2] = v; nimg.data[i * 4 + 3] = 255;
-      iimg.data[i * 4] = iimg.data[i * 4 + 1] = iimg.data[i * 4 + 2] = 255 - v; iimg.data[i * 4 + 3] = 255;
     }
     nctx.putImageData(nimg, 0, 0);
-    ictx.putImageData(iimg, 0, 0);
-    return { color: c, normal: normal, inverted: inverted };
+    return { color: c, normal: normal };
+  }
+
+  function scaleCanvas(src, f) {
+    if (f === 1) return src;
+    var c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(src.width * f));
+    c.height = Math.max(1, Math.round(src.height * f));
+    var x = c.getContext('2d');
+    x.imageSmoothingEnabled = true;
+    x.imageSmoothingQuality = 'high';
+    x.drawImage(src, 0, 0, c.width, c.height);
+    return c;
   }
 
   function flatten(data) {
@@ -611,10 +621,11 @@
     progressCb = function (p) { if (token === photoToken) setProgress(p); };
     setProgress(0);
     var passes = [];
-    var labelsRead = [['normal', cv.normal], ['invertida', cv.inverted]];
+    // Varias escalas: el motor lee mejor el texto de tamaño medio que las letras gigantes de un cartel
+    var labelsRead = [['x1', 1], ['x1/2', 0.5], ['x1/4', 0.25]];
     for (var pi = 0; pi < labelsRead.length; pi++) {
-      if (pi === 1) setStatus('Comprobando con la imagen invertida…', '');
-      var res = await worker.recognize(labelsRead[pi][1]);
+      if (pi > 0) setStatus('Comprobando con otra escala…', '');
+      var res = await worker.recognize(scaleCanvas(cv.normal, labelsRead[pi][1]));
       if (token !== photoToken) return null;
       var lines = flatten(res.data);
       passes.push({ label: labelsRead[pi][0], lines: lines, reading: CC.parseLabel(lines) });
