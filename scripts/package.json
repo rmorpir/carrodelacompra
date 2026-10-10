@@ -1,0 +1,10 @@
+{
+  "name": "cuentacarro-web-tools",
+  "private": true,
+  "description": "Dependencias que solo se usan al compilar y probar la web instalable",
+  "dependencies": {
+    "tesseract.js": "5.1.1",
+    "@tesseract.js-data/spa": "*",
+    "playwright": "^1.56.0"
+  }
+}

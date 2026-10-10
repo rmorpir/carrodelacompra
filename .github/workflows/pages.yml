@@ -1,0 +1,69 @@
+name: Publicar web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "scripts/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Instalar el lector de carteles y las herramientas de prueba
+        run: npm install --prefix scripts --no-audit --no-fund
+
+      - name: Probar la lógica de ofertas y de lectura
+        run: node scripts/logic.test.js
+
+      - name: Montar la web
+        run: BUILD_ID="${{ github.run_number }}-${GITHUB_SHA::7}" bash scripts/build-web.sh
+
+      - name: Instalar Chromium para las pruebas
+        run: cd scripts && npx playwright install --with-deps chromium
+
+      - name: Probar el lector con carteles de ejemplo y el modo sin conexión
+        continue-on-error: true
+        run: node scripts/ocr-test.mjs
+
+      - name: Guardar carteles y capturas de la prueba
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prueba-lector
+          path: scripts/out
+          if-no-files-found: ignore
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
