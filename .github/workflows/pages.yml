@@ -44,6 +44,16 @@ jobs:
         continue-on-error: true
         run: node scripts/ocr-test.mjs
 
+      - name: Resumen de la prueba como anotación
+        if: always()
+        run: |
+          if [ -f scripts/out/report.md ]; then
+            body="$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' scripts/out/report.md)"
+            echo "::notice title=Informe del lector::${body}"
+          else
+            echo "::warning title=Informe del lector::La prueba no llegó a generar informe"
+          fi
+
       - name: Guardar carteles y capturas de la prueba
         if: always()
         uses: actions/upload-artifact@v4
